@@ -1,4 +1,28 @@
 services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: repitch-web
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgres://${POSTGRES_USER:-repitch}:${POSTGRES_PASSWORD:-repitch_dev_password_change_me}@postgres:5432/${POSTGRES_DB:-repitch}
+      REDIS_URL: redis://redis:6379
+      SFTP_HOST: sftp
+      SFTP_PORT: 22
+      SFTP_USER: ${SFTP_USER:-mailer}
+      SFTP_PASSWORD: ${SFTP_PASSWORD:-change_me_local_only}
+      SFTP_OUTBOX_PATH: /home/${SFTP_USER:-mailer}/outbox
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+
   postgres:
     image: postgres:16-alpine
     container_name: repitch-postgres

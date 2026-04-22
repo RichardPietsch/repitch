@@ -1,24 +1,20 @@
 # Repitch – Anonymous Pitch Feedback Tool (Base Stack)
 
-This repository contains the **base technical setup** for a self-hosted tool that collects strict-anonymous participant feedback for pitch retrospectives.
+This repository now contains a **runnable base stack** for a self-hosted anonymous pitch feedback tool:
 
-## What is included in this base setup
-
-- Containerized local runtime with Docker Compose
-- PostgreSQL for persistent storage
-- Redis for background jobs/queues
+- Next.js + Tailwind frontend/backend shell
+- PostgreSQL
+- Redis
 - SFTP dropbox service for outbound mail handoff (invite + result notifications)
-- Environment template and architecture notes for GDPR-oriented implementation
 
-> Important: This is a base infrastructure setup only. Application code and UI are intentionally not implemented yet.
+## What is currently implemented
 
-## Why this stack
+- A running web container (`web`) on port `3000`
+- A starter UI at `/` for creating a pitch feedback round (static scaffold)
+- A web health endpoint at `/api/health`
+- Infrastructure services for Postgres, Redis, and SFTP
 
-- Small expected scale (2–4 pitches/month, 5–10 participants each)
-- Self-hosted deployment preference
-- Strict anonymity requirement
-- Deadline-based collection and report generation
-- German/EU GDPR-conscious target environment
+> Important: This is still a scaffold. The metadata form is not wired to persistence yet, and invites/report generation are not implemented.
 
 ## Quick start (local)
 
@@ -28,19 +24,24 @@ This repository contains the **base technical setup** for a self-hosted tool tha
 cp .env.example .env
 ```
 
-2. Start infrastructure:
+2. Build and start all services:
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
-3. Verify containers are healthy:
+3. Open the app:
+
+- Frontend: `http://localhost:3000`
+- Health API: `http://localhost:3000/api/health`
+
+4. Verify containers are healthy:
 
 ```bash
 docker compose ps
 ```
 
-4. Stop services:
+5. Stop services:
 
 ```bash
 docker compose down
@@ -56,16 +57,16 @@ If you are on Apple Silicon (`arm64`) and use the `atmoz/sftp` image, Compose wi
 
 ## Services
 
+- `web`: Next.js app shell with starter pages
 - `postgres`: main relational database
 - `redis`: background queue backend
 - `sftp`: secure file-drop endpoint for outbound mail jobs/artifacts
 
-## Proposed app stack (next step)
+## Proposed next step
 
-- Next.js + Tailwind CSS (UI + API routes)
-- Prisma ORM
-- Background worker (BullMQ + Redis)
-- Report export as Markdown + CSV for Confluence copy/import
+- Wire metadata form submission to Postgres
+- Add invite token generation and participant questionnaire flow
+- Add deadline job + synthesis/export job pipeline
 
 ## SFTP mail handoff model
 
