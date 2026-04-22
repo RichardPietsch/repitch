@@ -1,4 +1,41 @@
+'use client';
+
+import { FormEvent, useState } from 'react';
+
 export default function HomePage() {
+  const [testEmailTo, setTestEmailTo] = useState('');
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
+  const [emailResult, setEmailResult] = useState<string | null>(null);
+
+  const sendTestEmail = async (event: FormEvent) => {
+    event.preventDefault();
+    setSendingTestEmail(true);
+    setEmailResult(null);
+
+    try {
+      const response = await fetch('/api/email/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ to: testEmailTo })
+      });
+
+      const data = (await response.json()) as { ok: boolean; error?: string; messageId?: string };
+
+      if (!response.ok || !data.ok) {
+        setEmailResult(`❌ Test email failed: ${data.error ?? 'Unknown error'}`);
+        return;
+      }
+
+      setEmailResult(`✅ Test email sent successfully (messageId: ${data.messageId ?? 'n/a'})`);
+    } catch (error) {
+      setEmailResult(`❌ Test email failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setSendingTestEmail(false);
+    }
+  };
+
   return (
     <main className="mx-auto min-h-screen max-w-3xl p-6 md:p-10">
       <header className="mb-8">
@@ -49,6 +86,35 @@ export default function HomePage() {
             Send invite links (coming next)
           </button>
         </form>
+      </section>
+
+      <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-semibold text-slate-900">SMTP test</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Send a test message first to confirm SMTP setup. You can set a fallback recipient with TEST_EMAIL_TO in your environment.
+        </p>
+
+        <form className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={sendTestEmail}>
+          <label className="grid flex-1 gap-1">
+            <span className="text-sm font-medium text-slate-700">Recipient email</span>
+            <input
+              className="rounded-md border border-slate-300 px-3 py-2"
+              onChange={(event) => setTestEmailTo(event.target.value)}
+              placeholder="recipient@example.com"
+              type="email"
+              value={testEmailTo}
+            />
+          </label>
+          <button
+            className="w-fit rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            disabled={sendingTestEmail}
+            type="submit"
+          >
+            {sendingTestEmail ? 'Sending…' : 'Send test email'}
+          </button>
+        </form>
+
+        {emailResult ? <p className="mt-3 text-sm text-slate-700">{emailResult}</p> : null}
       </section>
     </main>
   );
