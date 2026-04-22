@@ -22,7 +22,7 @@ This repository contains the **base technical setup** for a self-hosted tool tha
 
 ## Quick start (local)
 
-1. Copy environment file:
+1. Copy environment file (recommended, optional because `docker-compose.yml` includes safe defaults):
 
 ```bash
 cp .env.example .env
@@ -45,6 +45,14 @@ docker compose ps
 ```bash
 docker compose down
 ```
+
+## Troubleshooting first run
+
+If you saw errors such as `POSTGRES_PASSWORD is not specified` or `exec: ::1001: not found`, the cause is usually missing environment variables.
+
+This repository now provides compose-level defaults so startup works even without `.env`. You can still set explicit values in `.env` for local consistency and safer credentials.
+
+If you are on Apple Silicon (`arm64`) and use the `atmoz/sftp` image, Compose will run it using `linux/amd64` emulation by default (`SFTP_PLATFORM=linux/amd64`).
 
 ## Services
 

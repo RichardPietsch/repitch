@@ -4,15 +4,19 @@ services:
     container_name: repitch-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-repitch}
+      POSTGRES_USER: ${POSTGRES_USER:-repitch}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-repitch_dev_password_change_me}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-repitch} -d ${POSTGRES_DB:-repitch}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -33,15 +37,16 @@ services:
 
   sftp:
     image: atmoz/sftp:alpine
+    platform: ${SFTP_PLATFORM:-linux/amd64}
     container_name: repitch-sftp
     restart: unless-stopped
     ports:
       - "${SFTP_PORT:-2222}:22"
     volumes:
-      - ./sftp/upload:/home/${SFTP_USER}/upload
-      - ./sftp/outbox:/home/${SFTP_USER}/outbox
-      - ./sftp/archive:/home/${SFTP_USER}/archive
-    command: "${SFTP_USER}:${SFTP_PASSWORD}:1001"
+      - ./sftp/upload:/home/${SFTP_USER:-mailer}/upload
+      - ./sftp/outbox:/home/${SFTP_USER:-mailer}/outbox
+      - ./sftp/archive:/home/${SFTP_USER:-mailer}/archive
+    command: "${SFTP_USER:-mailer}:${SFTP_PASSWORD:-change_me_local_only}:1001"
 
 volumes:
   postgres_data:
