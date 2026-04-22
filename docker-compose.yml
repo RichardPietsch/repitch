@@ -1,0 +1,77 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: repitch-web
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgres://${POSTGRES_USER:-repitch}:${POSTGRES_PASSWORD:-repitch_dev_password_change_me}@postgres:5432/${POSTGRES_DB:-repitch}
+      REDIS_URL: redis://redis:6379
+      SFTP_HOST: sftp
+      SFTP_PORT: 22
+      SFTP_USER: ${SFTP_USER:-mailer}
+      SFTP_PASSWORD: ${SFTP_PASSWORD:-change_me_local_only}
+      SFTP_OUTBOX_PATH: /home/${SFTP_USER:-mailer}/outbox
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: repitch-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-repitch}
+      POSTGRES_USER: ${POSTGRES_USER:-repitch}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-repitch_dev_password_change_me}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-repitch} -d ${POSTGRES_DB:-repitch}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: repitch-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  sftp:
+    image: atmoz/sftp:alpine
+    platform: ${SFTP_PLATFORM:-linux/amd64}
+    container_name: repitch-sftp
+    restart: unless-stopped
+    ports:
+      - "${SFTP_PORT:-2222}:22"
+    volumes:
+      - ./sftp/upload:/home/${SFTP_USER:-mailer}/upload
+      - ./sftp/outbox:/home/${SFTP_USER:-mailer}/outbox
+      - ./sftp/archive:/home/${SFTP_USER:-mailer}/archive
+    command: "${SFTP_USER:-mailer}:${SFTP_PASSWORD:-change_me_local_only}:1001"
+
+volumes:
+  postgres_data:
+  redis_data:
